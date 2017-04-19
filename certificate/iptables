@@ -1,0 +1,42 @@
+# Создаём базовые правила
+iptables -P INPUT ACCEPT
+iptables -F
+iptables -A INPUT -i lo -j ACCEPT
+
+# Если мы полностью доверяем сети, подключенной к eth0 - строчку ниже можно раскомментировать
+iptables -A INPUT -i 141.101.8.178 -j ACCEPT
+
+# Не трогаем уже установленные соединений
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Разрешаем SSH
+iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Добавляем правило - заблокировать всё кроме указанного ниже
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT ACCEPT
+
+# Разрешаем HTTPS (если используем админку типа FreePBX)
+# iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+# Разрешаем SIP только с указанных адресов и диапазонов
+# iptables -A INPUT -p udp -m udp -s 123.123.123.123 --dport 5060 -j ACCEPT
+# iptables -A INPUT -p udp -m udp -s 125.125.125.125 --dport 5060 -j ACCEPT
+# iptables -A INPUT -p udp -m udp -s 192.168.0.0/24 --dport 5060 -j ACCEPT
+
+# Либо разрешаем SIP с любого адреса
+# iptables -A INPUT -p udp -m udp --dport 5060 -j ACCEPT
+
+# Разрешаем RTP
+iptables -A INPUT -p udp -m udp --dport 10000:20000 -j ACCEPT
+
+# Разрешаем IAX2 с указанного адреса
+# iptables -A INPUT -p udp -m udp -s 192.168.1.1 --dport 4569 -j ACCEPT
+
+# Или разрешам IAX2 с любого адреса
+# iptables -A INPUT -p udp -m udp --dport 4569 -j ACCEPT
+
+# Защита от SIP flood (будет работать если включен fail2ban)
+iptables -A INPUT -p udp --dport 5060 -m recent --set --name SIP
+iptables -A INPUT -p udp --dport 5060 -m recent --update --seconds 2 --hitcount 20 --name SIP -j LOG --log-level INFO --log-prefix "SIP flood detected: 
